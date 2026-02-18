@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: transparent;
+    }
+
+    .widget {
+        padding: 24px;
+        border-radius: 24px;
+        height: 140px;
+        margin: 0;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        gap: 20px;
+
+        /* Default background — will be overridden dynamically */
+        background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+
+
+        /* Smooth background transition */
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                    background 0.8s ease;
+
+        /* Hidden by default */
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+        pointer-events: none;
+    }
+
+    .widget.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        pointer-events: auto;
+    }
+
+    /* Subtle overlay for depth and text readability */
+    .widget::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.06), transparent 60%);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    /* Content above the overlay */
+    .image-box,
+    .info {
+        position: relative;
+        z-index: 2;
+    }
+
+    .image-box {
+        flex-shrink: 0;
+        width: 92px;
+        height: 92px;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow:
+            0 4px 16px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .image-box:hover {
+        transform: scale(1.03);
+    }
+
+    #cover {
+        height: 100%;
+        width: 100%;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: opacity 0.5s ease;
+        position: relative;
+    }
+
+    #cover::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.15) 100%);
+    }
+
+    .info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+    }
+
+    .text-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    #title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        color: #ffffff;
+        margin: 0;
+        padding: 0;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    #artist {
+        font-size: 15px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+        padding: 0;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    #artist .separator {
+        opacity: 0.4;
+        margin: 0 6px;
+        font-weight: 400;
+    }
+
+    #timeline {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 14px;
+    }
+
+    #time-passed,
+    #length {
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.55);
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.3px;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    #progressbar {
+        position: relative;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    #progress {
+        height: 100%;
+        background: linear-gradient(90deg, #a78bfa 0%, #7c3aed 100%);
+        border-radius: 10px;
+        width: 0%;
+        transition: width 0.2s linear;
+        position: relative;
+        box-shadow: 0 0 16px rgba(167, 139, 250, 0.6);
+    }
+
+    #progress::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.3) 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%);
+        border-radius: 10px;
+    }
+
+    .placeholder-note {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 36px;
+        opacity: 0.2;
+        user-select: none;
+    }
+
+    @media (max-width: 600px) {
+        .widget {
+            height: 120px;
+            padding: 18px;
+        }
+
+        .image-box {
+            width: 84px;
+            height: 84px;
+        }
+
+        #title {
+            font-size: 19px;
+        }
+
+        #artist {
+            font-size: 14px;
+        }
+    }
+</style>
+
+<body>
+    <div class="widget" id="widget">
+        <div class="image-box">
+            <div id="cover">
+                <div class="placeholder-note">♪</div>
+            </div>
+        </div>
+        <div class="info">
+            <div class="text-content">
+                <div id="title">Waiting for music...</div>
+                <div id="artist">&nbsp;</div>
+            </div>
+            <div id="timeline">
+                <div id="time-passed">0:00</div>
+                <div id="progressbar">
+                    <div id="progress"></div>
+                </div>
+                <div id="length">0:00</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    const PAUSED_PLACEHOLDER = "Nothing playing";
+    const WAITING_PLACEHOLDER = "Waiting for music...";
+    const REFRESH_INTERVAL_MS = 200;
+    const PEAR_API_URL = 'http://localhost:9863/api/v1/song';
+
+    // Delay before hiding (ms)
+    const HIDE_DELAY_MS = 3000;
+
+    let lastTitle = undefined;
+    let lastArtist = undefined;
+    let lastCover = undefined;
+    let isPlaying = false;
+    let hideTimeout = null;
+    let widgetVisible = false;
+    let hideScheduled = false;
+
+    const widgetEl = document.getElementById('widget');
+
+    const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%231a1a1a" width="100" height="100"/%3E%3Ctext x="50" y="55" font-family="Inter,sans-serif" font-size="32" fill="%23444" text-anchor="middle" dominant-baseline="middle"%3E♪%3C/text%3E%3C/svg%3E';
+
+    function showWidget() {
+        // Cancel scheduled hide
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+        hideScheduled = false;
+
+        if (!widgetVisible) {
+            widgetEl.classList.add('visible');
+            widgetVisible = true;
+        }
+    }
+
+    function scheduleHide() {
+        // Already scheduled or already hidden — skip
+        if (hideScheduled || !widgetVisible) return;
+
+        hideScheduled = true;
+        hideTimeout = setTimeout(() => {
+            widgetEl.classList.remove('visible');
+            widgetVisible = false;
+            hideTimeout = null;
+            hideScheduled = false;
+        }, HIDE_DELAY_MS);
+    }
+
+    function formatTime(seconds) {
+        if (!seconds || seconds < 1) return '0:00';
+
+        const totalSeconds = Math.floor(seconds);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+
+        const secStr = secs < 10 ? '0' + secs : secs;
+
+        if (hours > 0) {
+            const minStr = minutes < 10 ? '0' + minutes : minutes;
+            return `${hours}:${minStr}:${secStr}`;
+        }
+        return `${minutes}:${secStr}`;
+    }
+
+    function calculateBrightness(packedRgb) {
+        const rgb = unpackRgb(packedRgb);
+        return (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000 / 255;
+    }
+
+    function decreaseBrightness(rgb, amount) {
+        return [
+            Math.max(0, Math.floor(rgb[0] * (1 - amount))),
+            Math.max(0, Math.floor(rgb[1] * (1 - amount))),
+            Math.max(0, Math.floor(rgb[2] * (1 - amount)))
+        ];
+    }
+
+    function increaseBrightness(rgb, amount) {
+        return [
+            Math.min(255, Math.floor(rgb[0] + (255 - rgb[0]) * amount)),
+            Math.min(255, Math.floor(rgb[1] + (255 - rgb[1]) * amount)),
+            Math.min(255, Math.floor(rgb[2] + (255 - rgb[2]) * amount))
+        ];
+    }
+
+    function packRgb(r, g, b) {
+        return (r << 16) | (g << 8) | b;
+    }
+
+    function unpackRgb(rgb) {
+        return [
+            (rgb >> 16) & 0xFF,
+            (rgb >> 8) & 0xFF,
+            rgb & 0xFF
+        ];
+    }
+
+    function extractColorPalette(url, numColors) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+
+            img.onload = function() {
+                try {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    const colorCounts = {};
+
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+                    for (let i = 0; i < imageData.length; i += 16) {
+                        const r = imageData[i];
+                        const g = imageData[i + 1];
+                        const b = imageData[i + 2];
+                        const a = imageData[i + 3];
+
+                        if (a > 128) {
+                            const color = packRgb(r, g, b);
+                            colorCounts[color] = (colorCounts[color] || 0) + 1;
+                        }
+                    }
+
+                    const sortedColors = Object.keys(colorCounts).sort(
+                        (a, b) => colorCounts[b] - colorCounts[a]
+                    );
+
+                    resolve(sortedColors.slice(0, numColors));
+                } catch (e) {
+                    reject(e);
+                }
+            };
+
+            img.onerror = () => reject(new Error("Failed to load image"));
+            img.src = url;
+        });
+    }
+
+    function applyColorTheme(palette) {
+        // Dominant color (most frequent)
+        let dominantRgb = unpackRgb(palette[0]);
+
+        // Accent color for the progress bar (brightest from palette)
+        let accentValue = 0;
+        let accentPacked = palette[0];
+
+        for (let color of palette) {
+            const brightness = calculateBrightness(color);
+            if (brightness > accentValue && brightness < 0.85) {
+                accentPacked = color;
+                accentValue = brightness;
+            }
+        }
+
+        let accentRgb = unpackRgb(accentPacked);
+        if (accentValue < 0.4) {
+            accentRgb = increaseBrightness(accentRgb, 0.3);
+        }
+
+        // --- Widget background: gradient from darkened dominant color ---
+        const bgDark = decreaseBrightness(dominantRgb, 0.75);
+        const bgMid = decreaseBrightness(dominantRgb, 0.55);
+
+        widgetEl.style.background = `linear-gradient(135deg,
+            rgb(${bgDark[0]}, ${bgDark[1]}, ${bgDark[2]}) 0%,
+            rgb(${bgMid[0]}, ${bgMid[1]}, ${bgMid[2]}) 100%)`;
+
+
+
+        // --- Progress bar ---
+        const progressEl = document.getElementById('progress');
+        progressEl.style.background = `linear-gradient(90deg,
+            rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}) 0%,
+            rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.8) 100%)`;
+        progressEl.style.boxShadow = `0 0 16px rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, 0.6)`;
+    }
+
+    function updateUI(data) {
+        const title = data.title || '';
+        const artist = data.artist || '';
+        const album = data.album || '';
+        const thumbnail = data.imageSrc || data.thumbnail || '';
+        const elapsed = data.elapsedSeconds || 0;
+        const duration = data.songDuration || 0;
+        const paused = data.isPaused || false;
+
+        const hasTrack = !!title;
+        const currentlyPlaying = hasTrack && !paused;
+
+        if (currentlyPlaying) {
+            showWidget();
+        } else {
+            scheduleHide();
+        }
+
+        // Update title
+        if (title !== lastTitle) {
+            const titleEl = document.getElementById('title');
+            if (!title) {
+                titleEl.innerText = PAUSED_PLACEHOLDER;
+                isPlaying = false;
+            } else {
+                titleEl.innerText = title;
+                isPlaying = !paused;
+            }
+            lastTitle = title;
+        }
+
+        isPlaying = hasTrack && !paused;
+
+        // Update cover
+        if (!thumbnail) {
+            document.getElementById('cover').style.backgroundImage = `url(${placeholder})`;
+            document.querySelector('.placeholder-note').style.display = 'block';
+        } else if (thumbnail !== lastCover) {
+            const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(thumbnail)}`;
+            document.getElementById('cover').style.backgroundImage = `url("${thumbnail}")`;
+            document.querySelector('.placeholder-note').style.display = 'none';
+            lastCover = thumbnail;
+
+            // Extract palette → update background + progress bar
+            extractColorPalette(proxyUrl, 8).then(palette => {
+                applyColorTheme(palette);
+            }).catch(() => {
+                // Fallback
+                widgetEl.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #252525 100%)';
+            });
+        }
+
+        // Update artist and album
+        const artistText = artist || '';
+        if (artistText !== lastArtist) {
+            const artistEl = document.getElementById('artist');
+            let artistLine = '';
+
+            if (artistText) {
+                artistLine = artistText;
+                if (album && album !== artistText) {
+                    artistLine += `<span class="separator">•</span>${album}`;
+                }
+            }
+
+            artistEl.innerHTML = artistLine || '&nbsp;';
+            lastArtist = artistText;
+        }
+
+        // Update progress bar
+        if (duration > 0 && isPlaying) {
+            const percentage = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+            document.getElementById('progress').style.width = `${percentage}%`;
+        } else {
+            document.getElementById('progress').style.width = '0%';
+        }
+
+        // Update timestamps
+        document.getElementById('time-passed').innerText = formatTime(elapsed);
+        document.getElementById('length').innerText = formatTime(duration);
+    }
+
+    function fetchData() {
+        fetch(PEAR_API_URL)
+            .then(response => {
+                if (!response.ok) throw new Error('Connection failed');
+                return response.json();
+            })
+            .then(data => {
+                updateUI(data);
+            })
+            .catch(error => {
+                // API unavailable (pear-desktop closed) — hide widget
+                scheduleHide();
+            });
+    }
+
+    setInterval(fetchData, REFRESH_INTERVAL_MS);
+    fetchData();
+</script>
+
+</html>
